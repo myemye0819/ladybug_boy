@@ -1,0 +1,1048 @@
+# -*- coding: utf-8 -*-
+import pygame
+import sys
+import random
+
+# Pygame 초기화
+pygame.init()
+
+# --- 상수 정의 및 설정 ---
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("안녕마이레이디")
+
+# 색상
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+LIGHT_PINK = (255, 182, 193)
+GRAY_BUTTON = (80, 80, 80)
+DIALOG_BOX_COLOR = (30, 30, 30, 200)
+PADDING_X = 40
+
+# 폰트
+FONT_PATH = "C:/Windows/Fonts/malgun.ttf" # Windows 기본 맑은 고딕 폰트 경로
+font_title = pygame.font.Font(FONT_PATH, 40)
+font_message = pygame.font.Font(FONT_PATH, 25)
+font_option = pygame.font.Font(FONT_PATH, 25)
+try:
+    font_main = pygame.font.Font(FONT_PATH, 24)
+    font_option = pygame.font.Font(FONT_PATH, 20)
+    font_affection = pygame.font.Font(FONT_PATH, 20)
+except FileNotFoundError:
+    print("경고: Malgun 폰트 경로를 찾을 수 없습니다. 기본 폰트를 사용합니다.")
+    font_main = pygame.font.Font(None, 24)
+    font_option = pygame.font.Font(None, 20)
+    font_affection = pygame.font.Font(None, 20)
+
+# UI 요소 위치/크기
+DIALOG_HEIGHT = 180
+DIALOG_RECT = pygame.Rect(50, SCREEN_HEIGHT - DIALOG_HEIGHT - 20, SCREEN_WIDTH - 100, DIALOG_HEIGHT)
+TEXT_START_X = DIALOG_RECT.left + 20
+TEXT_START_Y = DIALOG_RECT.top + 20
+NAME_BOX_RECT = pygame.Rect(DIALOG_RECT.left, DIALOG_RECT.top - 30, 150, 30)
+NAME_TEXT_Y = NAME_BOX_RECT.centery - font_main.get_height() // 2
+
+# '이전' 및 '다시하기' 버튼 위치 정의
+PREV_BUTTON_RECT = pygame.Rect(DIALOG_RECT.right + 10, DIALOG_RECT.top, 60, 30)
+RESTART_RECT = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 100, 200, 60)
+
+# --- 게임 데이터 (메시지 및 호감도) ---
+messages = [
+    ("플레이 방법", "1. 엔터/마우스 클릭으로 문장 넘기기 \n2. 원하는 선택지를 클릭하세요."),
+    ("화이팅", "사건들을 해결하면서 등장인물들의 호감도를 올려 사랑을 이뤄보세요!"),
+    ("왕자님", "내 이름은 '왕자님'. 오늘은 전학간 학교에서의 첫날이다. 과연 새로운 친구들과 잘 지낼 수 있을까...?"),
+    ("왕자님", "새 교과서랑 담요랑 과자랑 인형이랑 친해지기 위한 뇌물인 마이쮸랑 촌지랑 구급상자랑 휴대용우산이랑 헬티 수저통(난 이거 없음 밥 못 먹어)이랑이것저것 챙겼더니 너무너무 무거운 것~~"),
+    ("왕자님", "그때 갑자기 작은 무언가가 빠른 속도로 나에게 다가오는 것이었던 것이었다!"),
+    ("왕자님", "''끄아악!''\n나는 비명을 지르며 손을 휘둘렀고 그것은 내 손에 튕겨져 나갔다."),
+    ("왕자님", "뺑소니범이 된 것 같은 기분을 느끼며 나는 서둘러 그 자리를 벗어났다."),
+    ("선생님", "반에 도착했다.\n''얘들아 오늘 전학 온 왕자님이라고 해. 잘 지내''"),
+    ("왕자님", "''얘들아 안녕! 나는 왕자님이라고 해. 잘 지내보자.''"),
+    ("왕자님", "나는 창가 끝 맨 뒷자리에 앉게 되었다. 그런데 가방은 있는데 내 옆자리가 비어 있었다."),
+    ("선생님", "''그런데 주님이는 아직 안 왔나? 얘들아 주님이랑 연락되는 애 없니??''"),#10
+    ("왕자님", "아무도 없는 듯했다. 선생님은 한숨을 쉬고 조례를 끝냈다.\n선생님이 나가시자마자 아이들이 내 자리로 우르르 몰려들었다."),
+    ("친구들", "''어디서 왔어?''\n''몇 살이야??''\n''이름 완전 신기하다~~''"),
+    ("왕자님", "대답하려는 순간 갑자기 밖에서 비명소리가 들렸다. 너도나도 창밖에 붙어서 바깥 상황을 살피려고 했다.\n애들 때문에 안 보여서 나는 그냥 밖으로 나갔다."),
+    ("왕자님", "주변을 둘러보니 어떤 쫄쫄이를 입고 있는 남자애 한 명이 열심히 떨어지는 벽돌을 치고 있었다. 비명을 지른 여자애는 쓰러져 있었다."),
+    ("선택", "무슨 일이지??", [("1. 도와준다.", "1"), ("2. 다시 반으로 돌아간다.", "2")]), # 선택지 (15)
+    ("왕자님", ""), # 16: 선택 1/2의 결과
+    ("왕자님", "반에 돌아오니 어째선지 숨을 고르고 있는 남자애가 옆자리에 앉아 있었다. 아마 얘가 그 주님이겠지?"), # 17: (선택 2 후 스토리)
+    ("왕자님", "어쨌든 인사는 해야겠지. \n''안녕, 오늘 전학 온 왕자님이야. 잘 부탁해!''"), # 18
+    ("공주님", "''넌...''\n고개를 젓고 ''아, 아무것도 아니야. 난 '공주님'이야. 이름이 공주님.''"), # 19
+    ("선택", "공주님에게 뭐라고 인사할까?", [
+        ("1. 이거 완전 운명인데? 나랑 사귈래???", "1"),
+        ("2. 공주님 행차하신다~~~ 길을 비켜라~~!!", "2"),
+        ("3. 와 그렇구나, 어떻게 이런 우연이!", "3")
+    ]), #20
+    ("공주님", "''....뭐?''\n공주님의 표정이 일그러졌다."), # 21 (선택 1 결과)
+    ("엔딩", "다음날 학교에 가보니 공주님이 전학했다는 소식만이 남았다."), # 22 (선택 1 결과)
+    ("엔딩", "'배드엔딩'."),#23 (선택 1 결과, 최종 엔딩 메시지)
+    ("공주님", "''하하 너 진짜 humorous하고 funny다''"), # 24 (선택 2 결과)
+    ("왕자님", "''와! 너 English 진짜 good이다!''"), # 25 (선택 2 결과)
+    ("공주님", "''그러게''"), # 26 (선택 3 결과)
+    ("왕자님", "''앞으로 잘 지내보자!''"), # 27 (선택 3 결과)
+    ("왕자님", "눈을 떠보니 벌써 급식시간이었다."),
+    ("공주님", "''야 일어나! 수업은 안 들어도 밥은 먹어야지.''"),
+    ("공주님", "''얼른 급식복 입어. 우리 학교 급식 먹는 방법이 되게 특이해서 민첩하게 움직여야 해.''"),
+    ("왕자님", "''근데 나는 오늘 전학 와서 급식복이 없는데...?''"),
+    ("공주님", "''그럼 어쩔 수 없지. 잘 먹어봐ㅋ''"),
+    ("왕자님", "'근데 대체 급식을 어떻게 먹길래 급식복이 필요한 거지...?'\n나와 공주님은 운동장으로 향했다.\n'근데 대체 급식을 어떻게 먹길래 운동장에서 먹는 거지...?'"),
+    ("공주님", "''이제 하늘에서 급식이 떨어질 건데 잘 받아 먹어 봐. 간혹 새똥이 있을 수 있는데 그것도 잘 피해야 하여.''"),#34
+    ("선택", "하늘에서 음식이 떨어진다. 방향키로 떨어지는 급식을 잘 먹어 보자.\n가끔 가다 음식이 아닌 게 떨어질 수 있는데 잘 피해야 한다.", [("먹는다.", "1")]),#35,
+    ("왕자님", "''아 잘 먹었다~^^ 근데 여기 급식 되게 특이하다''"),
+    ("공주님", "''우리 교장쌤이 하늘에서 음식이 떨어진다를 감명깊게 봐서 그래. \n그리고 너 이름이 더 특이해.''"),
+    ("왕자님", "''뭐라고??''"),
+    ("선택", "공주님에게 뭐라고 대답할까?", [
+        ("1. 너 정말 재치 있고 FUNNY하다~", "1"),
+        ("2. 지는", "2"),
+        ("3. 아진짜요", "3")
+    ]), #39
+    ("공주님", "TANK~"),#40 선택1결
+    ("공주님", "''뭐??''\n공주님의 표정이 좋지 않다. 뭔가 잘못 말한 것 같다."),#41 선택2결
+    ("공주님", "''응그래.''"),#42 선택3결
+    ("상황", "그때였다. 어디선가 비명소리가 들려왔다."),
+    ("여학생1", "''꺄아아아악!!! 뱀이야!!''\n오늘 아침 벽돌사건 때의 그 여자아이였다. 어쩐지 비명이 익숙하더라니..."),
+    ("학생들", "''뭐!? 뱀이라고!? 다들 도망쳐!!''\n''뱀이다~ 뱀이다~''\n''여기서 죽을 쑨 없어!''"),
+    ("상황", "학생들과 선생님들이 모두 혼비백산 도망치기 시작했다. 덕분에 학교에는 공주님과 나밖에 남지 않았다."), #46
+    ("왕자님", "''아니 아무리 그래도 그렇지, 이럴 수가 있나...?? 주님아 너도 그렇게 생각-\n...응..?''"),
+    ("왕자님", "주위를 아무리 둘러봐도 주님이가 없다. 분명 아까까지 옆에 있었는데... 아무래도 다른 학생들에게 밀려 밖으로 나간 것 같았다."),
+    ("왕자님", "''어쩔 수 없지.''\n결국 나도 학교 밖으로 나가려던 찰나, 인기척이 느껴지더니 누군가가 내 팔을 잡아당겼다."),
+    ("???", "''위험해!!!''\n뒤를 돌아보니 뱀이 송곳니를 들이밀며 나에게 달려오고 있었다. 다행히 누군가가 막아준 덕분에 다치지 않았다."),
+    ("왕자님", "''어? 너는 아침에 봤던 그... 쫄쫄이!?''"),
+    ("레벅보이", "''쪼, 쫄쫄이라니..!! 난 레이디버그 보이야. 들어본 적 없어??''"),
+    ("선택", "레이디버그 보이에게 뭐라고 대답할까?", [
+        ("1. 들어본 적 없는데...", "1"),
+        ("2. 어디서 들어봤던 것 같아!", "2"),
+        ("3. 내가 왜 알아야 해? 너 그거 자의식 과ing이야", "3"),
+    ]), #53
+    ("레벅보이", "''으윽..!!''\n그때 갑자기 레벅보이가 팔을 잡고 쓰러졌다. 아무래도 아까 나를 구할 때 대신 뱀에 물린 것 같았다."),
+    ("레벅보이", "''이렇게 된 이상..! 부탁이야 왕자님, 나 대신 뱀을 막아줘!''"),
+    ("왕자님", "''어??? 아, 알았어..! ''\n그런데 내 이름을 어떻게 안 거지? 자세히 생각할 틈도 없이 다시 뱀이 이쪽으로 향했다."),
+    ("선택", "뱀을 주변에 떨어진 남은 음식들로 유인해 격파하자. 방향키로 조종할 수 있다.", [("싸운다", "1")]),#57
+    ("왕자님", "배가 빵빵해진 뱀이 옆으로 털썩 쓰러졌다. 끝난 것 같다. 나는 레벅보이에게 다가갔다.\n''레벅아 너 괜찮아!?''"),
+    ("레벅보이", "''잠깐, 지금 오면..!!''\n갑자기 레벅보이한테서 엄청난 빛이 새어나오기 시작했다. 곤충이라 변태를 하는 건가..?"),#59
+    ("왕자님", "''어..? 너는......''"),
+    ("공주님", "''........''"),#61
+    ("공주님", "''맞아, 내가 레이디버그 보이야.''"),
+    ("공주님", "''그리고 내 정체를 이미 들켜버린 이상, 내 마음을 전해야 할 것 같아.''"), #63 호감도 일정 이상이었을 때 진행
+    ("공주님", "나.. 널 좋아해. 이런 내 마음을 받아줄래?"), #64
+    ("선택", "공주님의 마음을 받아줄까?", [
+        ("1. 그래 좋아.", "1"),
+        ("2. 싫어.", "2"),
+    ]), #65
+    ("공주님", "''다른 사람들에게 말하고 다니진 말아줘. 정체를 들켰으니 난 이제 이곳을 떠나야 할 거 같아. 안녕.''"), #66 호감도 일정 이하일 때 엔딩, 인덱스64에서 2번을 선택했을 때 엔딩
+    ("엔딩", "다음날 학교에 가보니 옆자리는 비어 있었고 공주님이 전학갔다는 소식만이 들려올 뿐이었다.\n-'평범엔딩'."),#67
+    ("공주님", "''...!! 고마워!''"), #인덱스64에서 1번을 선택했을 떄 엔딩 #68
+    ("엔딩", "그렇게 레이디버그 보이와 함께 사건을 해결하고, 공주님과 학교를 다니며 즐거운 생활을 보냈다."),
+    ("엔딩", "'해피엔딩'.")#70
+    
+]
+ORIGINAL_MESSAGE_COUNT = len(messages)
+
+message_index = 0
+호감도 = {
+    "레벅보이": 0,
+    "공주님" : 0
+}
+등장한_캐릭터 = set()
+
+# 게임 종료 플래그
+game_over = False
+
+# --- 게임 상태 초기화 함수 ---
+def reset_game():
+    """게임 상태를 초기화하고 처음으로 되돌립니다."""
+    global message_index, 호감도, 등장한_캐릭터, game_over, messages
+    
+    # 1. 변수 초기화
+    message_index = 0
+    호감도 = {
+        "레벅보이": 0,
+        "공주님" : 0
+    }
+    등장한_캐릭터 = set()
+    등장한_캐릭터.add("레벅보이")
+    game_over = False
+    
+    # 2. 미니게임 결과로 추가된 메시지 제거 (원본 길이로 복구)
+    if len(messages) > ORIGINAL_MESSAGE_COUNT:
+        del messages[ORIGINAL_MESSAGE_COUNT:]
+        
+    # 3. 스토리 분기 메시지 초기화 (미니게임1 결과가 저장되는 인덱스 16)
+    messages[16] = ("왕자님", "")
+    
+    print("--- 게임이 초기화되었습니다. ---")
+
+# --- 미니게임: 벽돌 게임 (원본 유지) ---
+def brick_game():
+    # ... (벽돌 게임 코드 유지)
+    game_screen = screen
+    pygame.display.set_caption("벽돌 게임 - 미니게임")
+    # 색
+    BLACK = (0, 0, 0)
+    BLUE = (0, 0, 255)
+    RED = (255, 0, 0)
+    WHITE = (255, 255, 255)
+
+    # 패들
+    paddle = pygame.Rect(350, 550, 100, 10)
+    paddle_speed = 7
+
+    # 공
+    ball = pygame.Rect(390, 300, 20, 20)
+    ball_speed = [4, -4]
+
+    # 벽돌
+    bricks = []
+    brick_width = 200
+    brick_height = 40
+    for i in range(3):  # 줄
+        for j in range(3):  # 칸
+            x = j * (brick_width + 20) + 100
+            y = i * (brick_height + 10) + 40
+            bricks.append(pygame.Rect(x, y, brick_width, brick_height))
+
+    clock = pygame.time.Clock()
+    running = True
+    cleared = False
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                return False
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and paddle.left > 0:
+            paddle.x -= paddle_speed
+        if keys[pygame.K_RIGHT] and paddle.right < 800:
+            paddle.x += paddle_speed
+
+        # 공 이동
+        ball.x += ball_speed[0]
+        ball.y += ball_speed[1]
+
+        # 벽 충돌
+        if ball.left <= 0 or ball.right >= 800:
+            ball_speed[0] = -ball_speed[0]
+        if ball.top <= 0:
+            ball_speed[1] = -ball_speed[1]
+        if ball.bottom >= 600:  # 바닥에 닿음
+            running = False
+            cleared = False
+
+        # 패들 충돌
+        if ball.colliderect(paddle):
+            ball_speed[1] = -abs(ball_speed[1])
+
+        # 벽돌 충돌
+        hit_index = ball.collidelist(bricks)
+        if hit_index != -1:
+            bricks.pop(hit_index)
+            ball_speed[1] = -ball_speed[1]
+
+        # 화면 클리어
+        game_screen.fill(BLACK)
+        pygame.draw.rect(game_screen, BLUE, paddle)
+        pygame.draw.ellipse(game_screen, WHITE, ball)
+
+        for brick in bricks:
+            pygame.draw.rect(game_screen, RED, brick)
+
+        pygame.display.flip()
+        clock.tick(60)
+
+        if not bricks:  # 벽돌 다 부숨 → 성공
+            running = False
+            cleared = True
+
+    pygame.display.set_caption("안녕마이레이디")
+    return cleared
+
+# --- 미니게임: 하늘에서 떨어지는 급식 (수정: 이미지 사용) ---
+def sky_food_game():
+    pygame.display.set_caption("하늘에서 급식이 떨어진다 - 미니게임")
+    clock = pygame.time.Clock()
+    running = True
+
+    # 이미지 크기 조정 (아이템 크기 30x30에 맞춤)
+    try:
+        FOOD_IMAGE = pygame.transform.scale(급식_image, (70, 70))
+        BAD_IMAGE = pygame.transform.scale(새똥_image, (70, 70))
+    except NameError:
+        print("경고: 미니게임 이미지 로드 실패. 대체 이미지를 사용합니다.")
+        FOOD_IMAGE = pygame.Surface((30, 30)); pygame.draw.circle(FOOD_IMAGE, (240, 200, 0), (15, 15), 15)
+        BAD_IMAGE = pygame.Surface((30, 30)); BAD_IMAGE.fill((30, 30, 30))
+
+    # 플레이어 (바구니)
+    player = pygame.Rect(SCREEN_WIDTH // 2 - 40, SCREEN_HEIGHT - 80, 80, 30)
+    player_speed = 8
+
+    # 아이템 정보
+    items = []
+    spawn_interval = 800  # ms
+    last_spawn = pygame.time.get_ticks()
+
+    start_time = pygame.time.get_ticks()
+    duration = 20000  # 20초 동안 진행
+    score = 0
+    hit_bad = False
+
+    small_font = font_option
+
+    while running:
+        now = pygame.time.get_ticks()
+        elapsed = now - start_time
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and player.left > 0:
+            player.x -= player_speed
+        if keys[pygame.K_RIGHT] and player.right < SCREEN_WIDTH:
+            player.x += player_speed
+
+        # 스폰
+        if now - last_spawn >= spawn_interval:
+            last_spawn = now
+            if random.random() < 0.75:
+                item_type = 'food'
+            else:
+                item_type = 'bad'
+            x = random.randint(20, SCREEN_WIDTH - 20)
+            rect = pygame.Rect(x, -30, 30, 30)
+            speed = random.randint(3, 6)
+            items.append({'rect': rect, 'type': item_type, 'speed': speed})
+
+            if spawn_interval > 300:
+                spawn_interval = max(300, spawn_interval - 5)
+
+        # 이동 및 충돌 검사
+        for it in items[:]:
+            it['rect'].y += it['speed']
+            if it['rect'].colliderect(player):
+                if it['type'] == 'food':
+                    score += 10
+                    items.remove(it)
+                else:  # bad
+                    hit_bad = True
+                    running = False
+                    break
+            elif it['rect'].top > SCREEN_HEIGHT:
+                items.remove(it)
+
+        # 종료 조건: 시간 끝
+        if elapsed >= duration:
+            running = False
+
+        # 그리기
+        screen.fill((80, 170, 220))  # 하늘색 배경
+        # 바닥, 플레이어
+        pygame.draw.rect(screen, (60, 120, 60), (0, SCREEN_HEIGHT - 100, SCREEN_WIDTH, 100))
+        pygame.draw.rect(screen, (150, 75, 0), player)  # 바구니
+
+        # 아이템 그리기 (이미지 사용)
+        for it in items:
+            if it['type'] == 'food':
+                screen.blit(FOOD_IMAGE, it['rect'])
+            else:
+                screen.blit(BAD_IMAGE, it['rect'])
+
+        # 점수와 남은시간 표시
+        time_left = max(0, (duration - elapsed) // 1000)
+        score_surf = small_font.render(f"점수: {score}", True, WHITE)
+        time_surf = small_font.render(f"남은시간: {time_left}s", True, WHITE)
+        screen.blit(score_surf, (10, 10))
+        screen.blit(time_surf, (10, 40))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.display.set_caption("안녕마이레이디")
+    return score, hit_bad
+
+
+# --- 미니게임: 뱀과의 전투 (Pygame 스네이크) ---
+# -------------------------------------------------------------------
+def snake_game():
+    pygame.display.set_caption("뱀과의 전투 - 미니게임 (스네이크)")
+    clock = pygame.time.Clock()
+    running = True
+
+    # 게임 상수
+    GRID_SIZE = 20
+    GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
+    GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
+    
+    # 뱀
+    snake_pos = [(GRID_WIDTH // 2, GRID_HEIGHT // 2)]
+    snake_direction = (1, 0) # 오른쪽
+    
+    # 먹이 (새똥 이미지)
+    try:
+        FOOD_IMAGE = pygame.transform.scale(새똥_image, (GRID_SIZE, GRID_SIZE))
+    except NameError:
+        print("경고: 새똥 이미지 로드 실패. 대체 이미지를 사용합니다.")
+        FOOD_IMAGE = pygame.Surface((GRID_SIZE, GRID_SIZE)); FOOD_IMAGE.fill((30, 30, 30))
+
+    # 주변에 떨어진 음식 아이템 (획득해야 할 목표)
+    try:
+        ITEM_IMAGE = pygame.transform.scale(급식_image, (GRID_SIZE, GRID_SIZE))
+    except NameError:
+        ITEM_IMAGE = pygame.Surface((GRID_SIZE, GRID_SIZE)); ITEM_IMAGE.fill((0, 200, 0))
+    
+    # 아이템 배치
+    items = []
+    def place_item():
+        while True:
+            x = random.randint(0, GRID_WIDTH - 1)
+            y = random.randint(0, GRID_HEIGHT - 1)
+            if (x, y) not in snake_pos and (x, y) not in [i['pos'] for i in items]:
+                items.append({'pos': (x, y), 'type': 'item'})
+                break
+
+    # 뱀 (적) 배치 (움직이지 않는 장애물로 사용)
+    # * 여기서는 뱀이 공격 목표이므로, 먹이(새똥)를 먹이고 덩치를 불리는 것을 미션으로 변경합니다.
+    #   미니게임 이름과 목표는 "뱀에게 먹이를 먹여 뱀의 움직임을 둔화시키는 것"으로 간주합니다.
+    
+    # 초기 아이템 배치
+    for _ in range(3):
+        place_item()
+        
+    score = 0
+    
+    # 뱀 이동 속도 (프레임 단위)
+    # 속도가 낮을수록(값이 클수록) 느림
+    snake_speed = 10 
+    time_since_last_move = 0
+    
+    # 폰트
+    small_font = font_option
+    
+    while running:
+        # 시간 경과 체크
+        dt = clock.tick(60) 
+        time_since_last_move += dt
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            
+            # 방향키 입력
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and snake_direction != (0, 1):
+                    snake_direction = (0, -1)
+                elif event.key == pygame.K_DOWN and snake_direction != (0, -1):
+                    snake_direction = (0, 1)
+                elif event.key == pygame.K_LEFT and snake_direction != (1, 0):
+                    snake_direction = (-1, 0)
+                elif event.key == pygame.K_RIGHT and snake_direction != (-1, 0):
+                    snake_direction = (1, 0)
+
+        # 뱀 이동 (속도 제어)
+        if time_since_last_move >= snake_speed * 10: # 100ms마다 이동
+            time_since_last_move = 0
+            
+            # 새 머리 위치 계산
+            new_head_x = snake_pos[0][0] + snake_direction[0]
+            new_head_y = snake_pos[0][1] + snake_direction[1]
+            new_head = (new_head_x, new_head_y)
+
+            # 1. 경계 충돌 검사
+            if not (0 <= new_head_x < GRID_WIDTH and 0 <= new_head_y < GRID_HEIGHT):
+                running = False
+                return score, False # 실패 (벽에 부딪힘)
+
+            # 2. 몸통 충돌 검사
+            if new_head in snake_pos:
+                running = False
+                return score, False # 실패 (자신에게 부딪힘)
+
+            # 3. 아이템 충돌 (새똥)
+            item_hit = False
+            for i, item in enumerate(items):
+                if new_head == item['pos']:
+                    score += 10
+                    snake_speed += 1 # 속도 감소 (느려짐)
+                    del items[i]
+                    place_item() # 새 아이템 생성
+                    item_hit = True
+                    break
+
+            # 뱀 이동 적용
+            snake_pos.insert(0, new_head)
+            if not item_hit: # 아이템을 먹지 않았으면 꼬리 제거 (길이 유지)
+                snake_pos.pop()
+
+            # 승리 조건: 일정 점수 이상
+            if score >= 50:
+                running = False
+                return score, True # 성공
+
+
+        # 그리기
+        screen.fill((100, 140, 100)) # 숲 배경 느낌
+
+        # 아이템 그리기
+        for item in items:
+            rect = pygame.Rect(item['pos'][0] * GRID_SIZE, item['pos'][1] * GRID_SIZE, GRID_SIZE, GRID_SIZE)
+            screen.blit(ITEM_IMAGE, rect)
+
+        # 뱀 그리기
+        for i, pos in enumerate(snake_pos):
+            rect = pygame.Rect(pos[0] * GRID_SIZE, pos[1] * GRID_SIZE, GRID_SIZE, GRID_SIZE)
+            color = (255, 100, 100) if i == 0 else (200, 50, 50) # 머리/몸통 색상
+            pygame.draw.rect(screen, color, rect)
+            pygame.draw.rect(screen, BLACK, rect, 1) # 경계선
+
+        # 점수 표시
+        score_surf = small_font.render(f"뱀에게 먹인 점수: {score}", True, WHITE)
+        speed_surf = small_font.render(f"뱀의 둔화 정도: {snake_speed - 10}", True, WHITE)
+        screen.blit(score_surf, (10, 10))
+        screen.blit(speed_surf, (10, 40))
+
+        # 목표 표시
+        target_surf = small_font.render("목표: 점수 50점 달성 (둔화시키기)", True, (255, 255, 0))
+        screen.blit(target_surf, (SCREEN_WIDTH - target_surf.get_width() - 10, 10))
+        
+        pygame.display.flip()
+
+    pygame.display.set_caption("안녕마이레이디")
+    return score, False # 실패로 종료된 경우
+
+# --- 이미지 로드 (경로를 반드시 확인하세요!) ---
+try:
+    # 이미지를 30x30으로 미리 조정하여 로드 (미니게임용)
+    bg = pygame.transform.scale(
+        pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\bg.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+    교실1 = pygame.transform.scale(
+        pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\교실.jpg").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+    운동장 = pygame.transform.scale(
+        pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\운동장.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+    레벅보이_image = pygame.transform.scale(
+        pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\무당벌레.png").convert_alpha(), (300, 300))
+    레벅보이2_image = pygame.transform.scale(
+        pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\레벅보이.png").convert_alpha(), (300, 500))
+    공주님_image = pygame.transform.scale(
+        pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\공주님.png").convert_alpha(), (300, 500))
+    급식_image = pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\급식.jpg").convert_alpha()
+    새똥_image = pygame.image.load(r"C:\Users\yerin\OneDrive\바탕 화면\레벅\image\새똥.jpg").convert_alpha() 
+    
+    레벅보이_rect = 레벅보이_image.get_rect(center=(400, 400))
+    레벅보이2_rect = 레벅보이2_image.get_rect(center=(400, 400))
+    공주님_rect = 공주님_image.get_rect(center=(400, 400))
+except pygame.error as e:
+    print(f"이미지 로드 오류: {e}. 이미지 경로를 확인해 주세요.")
+    # 대체 이미지 (디버깅용)
+    bg = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)); bg.fill((100, 100, 100))
+    교실1 = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)); 교실1.fill((150, 150, 150))
+    레벅보이_image = pygame.Surface((300, 300)); 레벅보이_image.fill((255, 0, 0))
+    레벅보이_rect = 레벅보이_image.get_rect(center=(400, 400))
+    레벅보이2_rect = 레벅보이2_image.get_rect(center=(400, 400))
+    공주님_rect = 공주님_image.get_rect(center=(400, 400))
+    급식_image = pygame.Surface((10, 10)); 급식_image.fill((0, 255, 0))
+    새똥_image = pygame.Surface((10, 10)); 새똥_image.fill((0, 0, 0))
+
+
+# --- 헬퍼 함수 ---
+def wrap_text(text, font, max_width):
+    text = text.strip() 
+    if not text: 
+        return []
+
+    lines = []
+    for line in text.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+            
+        words = line.split(' ')
+        current_line = ""
+        for word in words:
+            test_line = (current_line + " " + word).strip()
+            if font.size(test_line)[0] <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line.strip())
+                current_line = word
+        lines.append(current_line.strip())
+    
+    return [line for line in lines if line]
+
+
+def draw_dialog_box(screen, speaker, message_content, current_msg=None, current_index=None):
+    # 1. 반투명한 대화 상자 배경
+    dialog_surface = pygame.Surface(DIALOG_RECT.size, pygame.SRCALPHA)
+    dialog_surface.fill(DIALOG_BOX_COLOR)
+    screen.blit(dialog_surface, DIALOG_RECT)
+
+    # 2. 화자 이름 상자
+    if speaker:
+        name_surface = pygame.Surface(NAME_BOX_RECT.size, pygame.SRCALPHA)
+        name_surface.fill((255, 105, 180, 220))
+        screen.blit(name_surface, NAME_BOX_RECT)
+
+        # 화자 이름 텍스트
+        name_text = font_main.render(speaker, True, WHITE)
+        screen.blit(name_text, (NAME_BOX_RECT.left + 10, NAME_TEXT_Y))
+
+    # 3. 대화 내용 표시
+    wrapped_text = wrap_text(message_content, font_main, DIALOG_RECT.width - 40)
+    y_offset = TEXT_START_Y
+
+    for line in wrapped_text:
+        text_surface = font_main.render(line, True, WHITE)
+        screen.blit(text_surface, (TEXT_START_X, y_offset))
+        y_offset += font_main.get_height() + 5
+
+    # 다음으로 넘어가라는 표시 (안전하게 current_msg 또는 current_index 사용)
+    show_next = True
+    if current_msg is not None:
+        # current_msg가 ("선택", ...) 형태면 ▼ 표시 안함
+        if isinstance(current_msg, tuple) and len(current_msg) >= 1 and current_msg[0] == "선택":
+            show_next = False
+    elif current_index is not None:
+        if 0 <= current_index < len(messages):
+            m = messages[current_index]
+            if isinstance(m, tuple) and len(m) >= 1 and m[0] == "선택":
+                show_next = False
+        else:
+            # 인덱스가 범위 밖이면 표시하지 않음(안전)
+            show_next = False
+    else:
+        # fallback: 기존 방식 대신 안전 검사
+        if not (0 <= message_index < len(messages)):
+            show_next = False
+        else:
+            m = messages[message_index]
+            if isinstance(m, tuple) and len(m) >= 1 and m[0] == "선택":
+                show_next = False
+
+    if show_next:
+        next_indicator = font_option.render("▼", True, WHITE)
+        screen.blit(next_indicator, (DIALOG_RECT.right - 30, DIALOG_RECT.bottom - 30))
+
+
+def draw_prev_button(screen, mouse_pos):
+    """'이전' 버튼을 그리고 호버 효과를 적용합니다."""
+    button_color = GRAY_BUTTON
+    if PREV_BUTTON_RECT.collidepoint(mouse_pos):
+        button_color = (120, 120, 120)
+
+    pygame.draw.rect(screen, button_color, PREV_BUTTON_RECT, border_radius=5)
+    prev_text = font_option.render("이전", True, WHITE)
+    text_rect = prev_text.get_rect(center=PREV_BUTTON_RECT.center)
+    screen.blit(prev_text, text_rect)
+
+def draw_affection_status(screen):
+    """화면 상단에 호감도 목록을 표시"""
+    x = 10
+    y = 10
+
+    bg_height = font_affection.get_height() + 10
+    total_width = 0
+
+    for name in 등장한_캐릭터:
+        if name in 호감도:
+            text = f"{name}♥: {호감도[name]}"
+            text_width, _ = font_affection.size(text)
+            total_width += text_width + 25
+
+    if total_width > 0:
+        bg_surface = pygame.Surface((total_width, bg_height), pygame.SRCALPHA)
+        bg_surface.fill((0, 0, 0, 150))
+        screen.blit(bg_surface, (x, y))
+
+        current_x = x + 5
+        for name in 등장한_캐릭터:
+            if name in 호감도:
+                text = f"{name}♥: {호감도[name]}"
+                affection_surface = font_affection.render(text, True, LIGHT_PINK)
+                text_width, _ = affection_surface.get_size()
+                screen.blit(affection_surface, (current_x, y + 5))
+                current_x += text_width + 20
+
+# --- 엔딩 화면 그리기 함수 ---
+def draw_end_screen(screen, mouse_pos):
+    """엔딩 화면과 다시하기 버튼을 그립니다."""
+    screen.fill(BLACK) 
+
+    # 최종 엔딩 텍스트
+    final_text = font_main.render("--- 게임 종료 ---", True, WHITE)
+    final_rect = final_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100))
+    screen.blit(final_text, final_rect)
+    
+    # 최종 호감도 표시
+    y_offset = final_rect.bottom + 20
+    for name, value in 호감도.items():
+        text = f"{name}♥: {value}"
+        text_surf = font_affection.render(text, True, LIGHT_PINK)
+        text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
+        screen.blit(text_surf, text_rect)
+        y_offset += 30
+
+    # 다시하기 버튼 그리기
+    button_color = GRAY_BUTTON
+    if RESTART_RECT.collidepoint(mouse_pos):
+        button_color = (120, 120, 120)
+
+    pygame.draw.rect(screen, button_color, RESTART_RECT, border_radius=10)
+    restart_text = font_main.render("다시하기", True, WHITE)
+    restart_rect = restart_text.get_rect(center=RESTART_RECT.center)
+    screen.blit(restart_text, restart_rect)
+
+
+# --- 선택지 버튼 클래스 (동적 너비 적용) ---
+class ChoiceButton(object):
+    def __init__(self, x, y, text, value, font, padding_x, height=50):
+        self.text = text
+        self.value = value
+        self.font = font
+
+        text_width, _ = font.size(self.text)
+        button_width = text_width + padding_x
+
+        self.rect = pygame.Rect(x, y, button_width, height)
+
+        self.color = (50, 50, 50)
+        self.hover_color = (100, 100, 100)
+        self.current_color = self.color
+
+        self.text_surface = self.font.render(self.text, True, WHITE)
+        self.text_rect = self.text_surface.get_rect(center=self.rect.center)
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.current_color, self.rect, border_radius=10)
+        surface.blit(self.text_surface, self.text_rect)
+
+    def check_hover(self, mouse_pos):
+        if self.rect.collidepoint(mouse_pos):
+            self.current_color = self.hover_color
+        else:
+            self.current_color = self.color
+choice = None
+prev_message_index = -1
+# --- 메인 루프 ---
+clock = pygame.time.Clock()
+running = True
+options = [] 
+choice = None
+prev_message_index = -1  # 메시지 인덱스 변화 체크용
+
+while running:
+    mouse_pos = pygame.mouse.get_pos()
+    events = pygame.event.get()
+    state_changed = False
+
+    # 🌟 게임 오버 상태 처리
+    if game_over:
+        for event in events:
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if RESTART_RECT.collidepoint(mouse_pos):
+                    reset_game() 
+                    break 
+        
+        draw_end_screen(screen, mouse_pos)
+        pygame.display.flip()
+        clock.tick(30)
+        continue 
+ 
+        # 안전하게 message_index 보정
+    if message_index < 0:
+        message_index = 0
+    if message_index >= len(messages):
+        # 범위를 벗어났다면 마지막 인덱스로 보정
+        message_index = max(0, len(messages) - 1)
+        # (기존 로직 유지: 엔딩이면 game_over 처리)
+        if messages and messages[-1][0] == "엔딩":
+            game_over = True
+
+
+    current_msg = messages[message_index]
+        # 메시지 인덱스가 바뀌면 이전에 만들어진 옵션을 초기화
+    if message_index != prev_message_index:
+        options = []
+        choice = None
+    prev_message_index = message_index
+
+    is_choice_scene = isinstance(current_msg, tuple) and len(current_msg) >= 3 and isinstance(current_msg[2], list)
+
+    # --- 선택지 생성 (message_index 변경 시 options가 비워지는 로직과 함께 사용됨) ---
+    if is_choice_scene and not options:
+        # current_msg 구조: (타이틀/화자, 설명(또는 타이틀), [ (버튼텍스트, 값), ... ])
+        try:
+            title = current_msg[1]
+            choices_data = current_msg[2]
+        except Exception:
+            choices_data = []
+        # 버튼들 세로 배치 계산
+        total_height = len(choices_data) * 60
+        # 다이얼로그 위쪽에 배치하려 시도, 너무 위로 가면 아래쪽으로 고정
+        start_y = DIALOG_RECT.top - total_height - 10
+        if start_y < 10:
+            start_y = SCREEN_HEIGHT - 400
+
+        options = []
+        button_x = DIALOG_RECT.left + 50
+        for i, choice_item in enumerate(choices_data):
+            if isinstance(choice_item, (list, tuple)):
+                text, value = choice_item[0], choice_item[1]
+            else:
+                text = str(choice_item)
+                value = str(i + 1)
+
+            button_y = start_y + i * 60
+            new_button = ChoiceButton(button_x, button_y, text, value, font_option, PADDING_X, height=50)
+            options.append(new_button)
+
+
+    # --- 배경
+    if message_index == 22 or message_index == 23:
+        screen.fill(BLACK) 
+    elif message_index <= 1:
+        screen.blit(bg, (0, 0))
+    elif message_index <= 13 or (message_index >= 17 and message_index <= 30):
+        screen.blit(교실1, (0, 0))
+    elif (message_index >= 31):
+        screen.blit(운동장, (0, 0))
+    else:
+        screen.blit(bg, (0, 0))
+
+    # --- 캐릭터
+    if message_index >= 4 and message_index <= 6:
+        screen.blit(레벅보이_image, 레벅보이_rect)
+        if "레벅보이" not in 등장한_캐릭터: 등장한_캐릭터.add("레벅보이")
+    elif message_index >= 12 and message_index <= 17:
+        screen.blit(레벅보이_image, 레벅보이_rect)
+    elif (message_index >= 14 and message_index <= 15) or (message_index >= 50 and message_index <= 56) or message_index==59 :
+        screen.blit(레벅보이2_image, 레벅보이2_rect)
+    elif (message_index >= 17 and message_index <= 20) or (message_index >= 24 and message_index<= 46) or message_index>=61 :
+        screen.blit(공주님_image, 공주님_rect)
+        if "공주님" not in 등장한_캐릭터:
+            등장한_캐릭터.add("공주님")
+
+    # --- 선택지
+    if is_choice_scene:
+        title = current_msg[1]
+        # current_msg를 전달 -> draw_dialog_box가 안전하게 처리
+        draw_dialog_box(screen, "", title, current_msg=current_msg)
+        for button in options:
+            button.draw(screen)
+    else:
+        if isinstance(current_msg, tuple) and len(current_msg) >= 2:
+            speaker, content = current_msg[0], current_msg[1]
+            draw_dialog_box(screen, speaker, content, current_msg=current_msg)
+        else:
+            draw_dialog_box(screen, "", str(current_msg), current_msg=current_msg)
+
+
+
+    # --- 이벤트 처리 ---
+    for event in events:
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if message_index > 0 and PREV_BUTTON_RECT.collidepoint(mouse_pos):
+                message_index -= 1
+                options = []
+                choice = None
+                continue
+
+        if is_choice_scene:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for button in options:
+                    if button.rect.collidepoint(mouse_pos):
+                        choice = button.value
+                        options = [] 
+                        
+                        # --- 각 선택지에 따른 분기 ---
+                        if message_index == 4:
+                            등장한_캐릭터.add("레벅보이")
+                            호감도["레벅보이"] -= 10
+                            
+                        elif message_index == 15:
+                            if choice == "1":
+                                messages[message_index+1] = ("왕자님", "''뭐라도 해야겠다!!''\n이어지는 미니게임으로 벽돌을 뿌셔서 돕자.")
+                                pygame.display.flip()
+                                pygame.time.delay(500)
+                                result = brick_game()
+                                if result:
+                                    호감도["레벅보이"] += 40
+                                    messages[message_index+1] = ("왕자님", "벽돌을 다 부쉈다! 남자애가 나에게 감사 인사를 하고 어디론가 사라졌다. 어느새 무당벌레가 날아갔다.")
+                                else:
+                                    호감도["레벅보이"] -= 10
+                                    messages[message_index+1] = ("왕자님", "벽돌을 전부 막지 못했다... 남자애는 사라졌다.")
+                                message_index += 1 
+                                state_changed = True
+                                
+                            elif choice == "2":
+                                messages[message_index+1] = ("왕자님", "나는 다시 반으로 돌아가 자리에 앉았다.")
+                                호감도["레벅보이"] -= 40
+                                message_index += 1
+                                state_changed = True
+
+                        elif message_index == 20:
+                            if choice == "1":
+                                호감도["공주님"] -= 10
+                                message_index = 21
+                            elif choice == "2":
+                                호감도["공주님"] += 10
+                                message_index = 24
+                            elif choice == "3":
+                                호감도["공주님"] += 5
+                                message_index = 26
+
+                        elif message_index == 35:
+                            if choice == "1":
+                                pygame.time.delay(200)
+                                score, hit_bad = sky_food_game()
+                                if hit_bad:
+                                    # 배드 엔딩 (새똥 맞음)
+                                    # messages 리스트의 맨 뒤에 두 개의 엔딩 메시지 추가
+                                    messages.append(("엔딩", f"떨어진 위험물을 맞았습니다... 배드엔딩입니다. (획득 점수: {score})"))
+                                    messages.append(("엔딩", "'배드엔딩'.")) # 최종 엔딩 메시지
+                                    
+                                    # 🌟 수정 포인트: 새로 추가된 첫 번째 엔딩 메시지로 바로 이동
+                                    message_index = len(messages) - 2 
+                                    state_changed = True
+                                              
+                                else:
+                                    # 성공 메시지
+                                    # ... 호감도 계산 로직 ...
+                                    messages.append(("왕자님", f"하늘에서 급식을 잘 받아먹었다!"))
+                                    
+                                    # 인덱스를 다음 메시지(36)로 정확히 설정
+                                    message_index += 1 
+                                    state_changed = True
+                                    
+                                    break
+                            
+                        elif message_index == 39:
+                            if choice == "1":
+                                호감도["공주님"] += 20
+                                message_index = 40
+                            elif choice == "2":
+                                호감도["공주님"] -= 20
+                                message_index = 41
+                            elif choice == "3":
+                                message_index = 42
+                                
+                        elif message_index == 53:
+                            if choice == "1":
+                                message_index += 1
+                            elif choice == "2":
+                                호감도["레벅보이"] += 30
+                                message_index += 1
+                            elif choice == "3":
+                                호감도["레벅보이"] -= 30
+                                message_index += 1
+                                
+                        elif message_index == 57:
+                            if choice == "1":
+                                pygame.time.delay(200)
+                                
+                                # 스네이크 게임 실행
+                                score, success = snake_game() 
+                                
+                                if success:
+                                    호감도["레벅보이"] += 50
+                                    
+                                    # 🚨 [수정] 성공 메시지를 추가하는 대신, 인덱스 58로 바로 점프합니다.
+                                    message_index = 58 
+                                    state_changed = True # 화면 갱신 강제
+                                
+                                else:
+                                    호감도["레벅보이"] -= 50
+                                    
+                                    # 실패 엔딩 로직 (이 부분은 그대로 유지)
+                                    messages.append(("엔딩", "뱀이 너무 빨라 막지 못했다... 결국 뱀에게 물려버렸다."))
+                                    messages.append(("엔딩", "'뱀드엔딩.'"))
+                                    
+                                    # 실패 엔딩으로 점프
+                                    message_index = len(messages) - 2 
+                                    state_changed = True
+                                    
+                                break # 선택지 처리 루프 종료
+                            
+                        elif message_index == 62:
+                            호감도["공주님"] += 호감도["레벅보이"]
+                            if 호감도["공주님"] > 100:
+                                message_index = 63 # 고백 메시지
+                                
+                            else:
+                                message_index = 66 # 전학 메시지
+
+                            continue
+                                
+                        elif message_index == 65:
+                            if choice == "1":
+                                호감도["공주님"] += 100
+                                message_index = 68
+                            elif choice == "2":
+                                호감도["공주님"] -= 20
+                                message_index = 66
+                                
+                        elif message_index == 67:
+                            game_over = True
+                            continue
+
+                for button in options:
+                    button.check_hover(mouse_pos)
+
+        else:
+            if (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN) or \
+               (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1):
+            
+                # --- 인덱스 점프/분기 처리 ---
+                if message_index == 21:
+                    message_index = 66
+                elif message_index == 66:
+                    game_over = True # 최종 엔딩 후 게임 오버
+                    continue
+                elif message_index == len(messages) - 2 and messages[message_index][0] == "엔딩":
+                    message_index += 1
+                elif message_index == len(messages) - 1 and messages[message_index][0] == "엔딩":
+                        game_over = True
+                        continue
+            
+                
+                elif message_index in [40, 41, 42]:
+                    message_index += 1
+                
+                else:
+                    message_index += 1 # 기본 진행
+                    
+                    
+    if state_changed:
+        pygame.event.clear()
+        continue
+
+    # --- 그리기 ---
+    draw_affection_status(screen)
+
+    if message_index > 0:
+        draw_prev_button(screen, mouse_pos)
+
+    if is_choice_scene:
+        title = current_msg[1]
+        draw_dialog_box(screen, "", title)
+        for button in options:
+            button.draw(screen)
+    else:
+        if isinstance(current_msg, tuple) and len(current_msg) >= 2:
+            speaker, content = current_msg[0], current_msg[1]
+            draw_dialog_box(screen, speaker, content)
+        else:
+            draw_dialog_box(screen, "", str(current_msg))
+
+    pygame.display.flip()
+    clock.tick(30)
+
+pygame.quit()
+sys.exit()

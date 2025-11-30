@@ -38,6 +38,14 @@
             
             # 🚨 [이미지 파일 경로 반영]
             {"name": "game/image/무당벌레.png", "files": ["game/image/무당벌레.png"]},
+            {"name": "game/image/bg.png", "files": ["game/image/bg.png"]},
+            {"name": "game/image/공주님.png", "files": ["game/image/공주님.png"]},
+            {"name": "game/image/급식.png", "files": ["game/image/급식.png"]},
+            {"name": "game/image/교실.png", "files": ["game/image/교실.png"]},
+            {"name": "game/image/레벅보이.png", "files": ["game/image/레벅보이.png"]},
+            {"name": "game/image/새똥.png", "files": ["game/image/새똥.png"]},
+            {"name": "game/image/운동장.png", "files": ["game/image/운동장.png"]},
+
             
             # 🚨 [다른 리소스 파일이 있다면 여기에 추가하세요]
         ]

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>레이디버그 보이 (Pygame on Web)</title>
+    
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/pyscript.css" />
+    <script defer src="https://pyscript.net/releases/2024.1.1/pyscript.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+        }
+        #pygame_canvas { 
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <py-config>
+        packages = ["pygame"] 
+        
+        # 🌟 게임에 필요한 모든 파일 경로를 정확히 지정합니다.
+        fetch = [
+            {"name": "game.py", "files": ["game.py"]}, 
+            
+            # 🚨 [폰트 파일명 정정 반영]
+            {"name": "game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf", 
+             "files": ["game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf"]},
+            
+            # 🚨 [이미지 파일 경로 반영]
+            {"name": "game/image/무당벌레.png", "files": ["game/image/무당벌레.png"]},
+            
+            # 🚨 [다른 리소스 파일이 있다면 여기에 추가하세요]
+        ]
+    </py-config>
+    
+    <py-script src="game.py"></py-script> 
+</body>
+</html>

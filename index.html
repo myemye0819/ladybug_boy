@@ -1,56 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>레이디버그 보이 (Pygame on Web)</title>
-    
+
+    <!-- PyScript (버전은 너가 원하면 바꿔도 됨) -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/pyscript.css" />
     <script defer src="https://pyscript.net/releases/2024.1.1/pyscript.js"></script>
-    
+
     <style>
-        body {
+        html, body {
+            height: 100%;
             margin: 0;
-            overflow: hidden; 
+            background: #000;
+        }
+        /* 화면을 꽉 채우도록 */
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background-color: #000;
         }
-        #pygame_canvas { 
-            width: 100vw;
-            height: 100vh;
+        /* Pygame이 만든 캔버스가 자동으로 들어오므로 별도 스타일 최소화 */
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: pixelated; /* 픽셀아트 스타일 대응(선택) */
         }
     </style>
 </head>
 <body>
-    <py-config>
-        packages = ["pygame"] 
-        
-        # 🌟 게임에 필요한 모든 파일 경로를 정확히 지정합니다.
-        fetch = [
-            {"name": "game.py", "files": ["game.py"]}, 
-            
-            # 🚨 [폰트 파일명 정정 반영]
-            {"name": "game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf", 
-             "files": ["game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf"]},
-            
-            # 🚨 [이미지 파일 경로 반영]
-            {"name": "game/image/무당벌레.png", "files": ["game/image/무당벌레.png"]},
-            {"name": "game/image/bg.png", "files": ["game/image/bg.png"]},
-            {"name": "game/image/공주님.png", "files": ["game/image/공주님.png"]},
-            {"name": "game/image/급식.png", "files": ["game/image/급식.png"]},
-            {"name": "game/image/교실.png", "files": ["game/image/교실.png"]},
-            {"name": "game/image/레벅보이.png", "files": ["game/image/레벅보이.png"]},
-            {"name": "game/image/새똥.png", "files": ["game/image/새똥.png"]},
-            {"name": "game/image/운동장.png", "files": ["game/image/운동장.png"]},
+    <div id="game-container"></div>
 
-            
-            # 🚨 [다른 리소스 파일이 있다면 여기에 추가하세요]
+    <!--
+        중요: 여기에 fetch에 나열된 파일들은 리포지토리(혹은 index.html과 같은 호스트)에
+        정확한 경로/이름으로 존재해야 합니다.
+        (대소문자 구분, 확장자(.jpg/.png) 정확히 확인)
+    -->
+    <py-config>
+        packages = ["pygame"]
+        fetch = [
+            "game.py",
+
+            "game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf",
+
+            "game/image/bg.png",
+            "game/image/교실.jpg",
+            "game/image/운동장.png",
+            "game/image/무당벌레.png",
+            "game/image/레벅보이.png",
+            "game/image/공주님.png",
+            "game/image/급식.jpg",
+            "game/image/새똥.jpg"
         ]
     </py-config>
-    
-    <py-script src="game.py"></py-script> 
+
+    <!-- 네가 올려둔 파이썬 파일 이름(game.py)을 맞춰서 불러옴 -->
+    <py-script src="game.py"></py-script>
+
+    <!-- 간단한 안내(선택): 콘솔 로그나 오류를 확인하려면 브라우저 개발자도구 열기 -->
 </body>
 </html>

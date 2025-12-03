@@ -991,6 +991,9 @@ while running:
                         elif message_index == 67:
                             game_over = True
                             continue
+                        
+                        elif message_index == 70:
+                            reset_game
 
                 for button in options:
                     button.check_hover(mouse_pos)

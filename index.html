@@ -29,30 +29,30 @@
         canvas {
             max-width: 100%;
             max-height: 100%;
-            image-rendering: pixelated; 
+            image-rendering: pixelated;
         }
     </style>
 </head>
 <body>
-    <base href="/ladybug_boy/">
+    
     <div id="game-container"></div>
 
     <py-config>
         packages = ["pygame"]
-        # 🚨 [주의] 아래 나열된 모든 파일이 GitHub에 정확한 경로로 있어야 합니다.
         fetch = [
-            "game.py",
+            {"name": "game.py", "files": ["game.py"]},
 
-            "game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf",
+            {"name": "game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf", 
+             "files": ["game/NanumFontSetup_TTF_BARUNGOTHIC/NanumBarunGothic.ttf"]},
 
-            "game/image/bg.png",
-            "game/image/교실.jpg",
-            "game/image/운동장.png",
-            "game/image/무당벌레.png",
-            "game/image/레벅보이.png",
-            "game/image/공주님.png",
-            "game/image/급식.jpg",
-            "game/image/새똥.jpg"
+            {"name": "game/image/bg.png", "files": ["game/image/bg.png"]},
+            {"name": "game/image/교실.jpg", "files": ["game/image/교실.jpg"]},
+            {"name": "game/image/운동장.png", "files": ["game/image/운동장.png"]},
+            {"name": "game/image/무당벌레.png", "files": ["game/image/무당벌레.png"]},
+            {"name": "game/image/레벅보이.png", "files": ["game/image/레벅보이.png"]},
+            {"name": "game/image/공주님.png", "files": ["game/image/공주님.png"]},
+            {"name": "game/image/급식.jpg", "files": ["game/image/급식.jpg"]},
+            {"name": "game/image/새똥.jpg", "files": ["game/image/새똥.jpg"]}
         ]
     </py-config>
 

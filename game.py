@@ -517,19 +517,19 @@ def snake_game():
 try:
     # 이미지를 30x30으로 미리 조정하여 로드 (미니게임용)
     bg = pygame.transform.scale(
-        pygame.image.load(r"game/image/bg.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.image.load("game/image/bg.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
     교실1 = pygame.transform.scale(
-        pygame.image.load(r"game/image/교실.jpg").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.image.load("game/image/교실.jpg").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
     운동장 = pygame.transform.scale(
-        pygame.image.load(r"game/image/운동장.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.image.load("game/image/운동장.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
     레벅보이_image = pygame.transform.scale(
-        pygame.image.load(r"game/image/무당벌레.png").convert_alpha(), (300, 300))
+        pygame.image.load("game/image/무당벌레.png").convert_alpha(), (300, 300))
     레벅보이2_image = pygame.transform.scale(
-        pygame.image.load(r"game/image/레벅보이.png").convert_alpha(), (300, 500))
+        pygame.image.load("game/image/레벅보이.png").convert_alpha(), (300, 500))
     공주님_image = pygame.transform.scale(
-        pygame.image.load(r"game/image/공주님.png").convert_alpha(), (300, 500))
-    급식_image = pygame.image.load(r"game/image/급식.jpg").convert_alpha()
-    새똥_image = pygame.image.load(r"game/image/새똥.jpg").convert_alpha() 
+        pygame.image.load("game/image/공주님.png").convert_alpha(), (300, 500))
+    급식_image = pygame.image.load("game/image/급식.jpg").convert_alpha()
+    새똥_image = pygame.image.load("game/image/새똥.jpg").convert_alpha() 
     
     레벅보이_rect = 레벅보이_image.get_rect(center=(400, 400))
     레벅보이2_rect = 레벅보이2_image.get_rect(center=(400, 400))
